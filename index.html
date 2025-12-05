@@ -2,121 +2,99 @@
 <html lang="ru">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=0" />
-  <title>Telegram Trading Mini App — Demo</title>
-
-  <!-- Telegram Web App meta (вставь свой web_app_url в BotFather и сюда при необходимости) -->
-  <!-- Если используешь Telegram Web App: собирай BOT token в BotFather и укажи Web App URL -->
-  <!-- Пример: https://your-vercel-app.vercel.app/ -->
-  <meta name="telegram:bot_token" content="PUT_YOUR_BOT_TOKEN_HERE">
-
-  <link rel="stylesheet" href="/style.css" />
-  <!-- Chart.js CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+  <title>Telegram Trading MiniApp — Demo</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div id="app">
-    <header class="app-header">
-      <div class="brand">
-        <img src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='36' height='36'><rect width='36' height='36' rx='8' fill='%234A90E2'/><text x='18' y='23' font-size='16' fill='white' font-family='Arial' text-anchor='middle'>TR</text></svg>" alt="logo"/>
-        <div>
-          <h1>Trading Mini</h1>
-          <small>Баланс: <span id="balanceDisplay">1000.00</span> $</small>
-        </div>
-      </div>
-      <div class="header-actions">
-        <button id="telegramShareBtn" title="Открыть в Telegram">TG</button>
-      </div>
+    <header class="topbar">
+      <img src="assets/logo.png" alt="logo" class="logo">
+      <h1>MiniTrade</h1>
+      <div id="balance" class="balance">$1,000</div>
     </header>
 
     <nav class="tabs">
-      <button class="tab-btn active" data-tab="trade">Торговля</button>
-      <button class="tab-btn" data-tab="positions">Позиции</button>
-      <button class="tab-btn" data-tab="history">История</button>
-      <button class="tab-btn" data-tab="leaderboard">Рейтинг</button>
-      <button class="tab-btn" data-tab="settings">Настройки</button>
+      <button data-tab="trade" class="tab active">Торговля</button>
+      <button data-tab="history" class="tab">История</button>
+      <button data-tab="leaderboard" class="tab">Рейтинг</button>
+      <button data-tab="events" class="tab">События</button>
+      <button data-tab="settings" class="tab">Настройки</button>
     </nav>
 
-    <main>
-      <!-- TRADE -->
-      <section class="tab" id="trade" style="display:block;">
-        <div class="grid">
-          <div class="panel">
-            <label for="selectCoin">Монета</label>
-            <select id="selectCoin"></select>
+    <main class="content">
+      <!-- TRADE TAB -->
+      <section id="trade" class="pane visible">
+        <div class="market-header">
+          <select id="asset-select">
+            <option value="BTC">BTC</option>
+            <option value="SHIB">SHIB</option>
+            <option value="DOGE">DOGE</option>
+          </select>
 
-            <canvas id="priceChart" height="200"></canvas>
-          </div>
-
-          <div class="panel">
-            <div class="card">
-              <label>Выбор плеча</label>
-              <div class="leverage-row">
-                <button class="lev" data-lev="2">2x</button>
-                <button class="lev" data-lev="5">5x</button>
-                <button class="lev" data-lev="10">10x</button>
-              </div>
-
-              <label>Сумма для маржи ($)</label>
-              <input id="marginInput" type="number" min="1" step="1" value="50" />
-
-              <div class="side-row">
-                <button id="buyBtn" class="long">LONG</button>
-                <button id="sellBtn" class="short">SHORT</button>
-              </div>
-
-              <div class="info-block">
-                <div>Текущая цена: <b id="priceNow">—</b></div>
-                <div>Позиций сейчас: <b id="openCount">0</b></div>
-                <div>Ожидаемая ликвидация: <b id="liquidationEst">—</b></div>
-              </div>
-            </div>
+          <div class="controls">
+            <label>Леверидж
+              <select id="leverage">
+                <option>1</option><option>2</option><option>5</option><option>10</option>
+              </select>
+            </label>
+            <label>Сумма $
+              <input id="size" type="number" min="1" value="100"/>
+            </label>
+            <label>Стоп-лосс $
+              <input id="stop" type="number" placeholder="опционально"/>
+            </label>
+            <button id="open-btn" class="primary">Открыть позицию</button>
+            <button id="close-btn" disabled>Закрыть позицию</button>
           </div>
         </div>
-      </section>
 
-      <!-- POSITIONS -->
-      <section class="tab" id="positions" style="display:none;">
-        <div class="panel">
-          <h2>Открытые позиции</h2>
-          <div id="positionsList" class="positions-list"></div>
+        <div class="chart-wrap">
+          <canvas id="priceChart" width="800" height="320"></canvas>
+          <div class="chart-overlay">
+            <div id="entry-marker" class="marker"></div>
+            <div id="exit-marker" class="marker"></div>
+          </div>
+        </div>
+
+        <div class="market-stats">
+          <div>Цена: <span id="price">—</span></div>
+          <div>ROE: <span id="roe">—</span></div>
+          <div>Текущая позиция: <span id="position-info">Нет</span></div>
         </div>
       </section>
 
-      <!-- HISTORY -->
-      <section class="tab" id="history" style="display:none;">
-        <div class="panel">
-          <h2>История сделок</h2>
-          <div id="historyList"></div>
-        </div>
+      <!-- HISTORY TAB -->
+      <section id="history" class="pane">
+        <h2>История сделок</h2>
+        <ul id="history-list" class="history-list"></ul>
       </section>
 
-      <!-- LEADERBOARD -->
-      <section class="tab" id="leaderboard" style="display:none;">
-        <div class="panel">
-          <h2>Рейтинг игроков (локально)</h2>
-          <div id="leaderboardList"></div>
-        </div>
+      <!-- LEADERBOARD TAB -->
+      <section id="leaderboard" class="pane">
+        <h2>Рейтинг игроков</h2>
+        <ol id="leaderboard-list"></ol>
       </section>
 
-      <!-- SETTINGS -->
-      <section class="tab" id="settings" style="display:none;">
-        <div class="panel">
-          <h2>Настройки</h2>
-          <label>Начальный баланс (для теста)</label>
-          <input id="initialBalanceInput" type="number" value="1000" />
-          <button id="resetBtn">Сбросить всё и начать заново</button>
+      <!-- EVENTS TAB -->
+      <section id="events" class="pane">
+        <h2>Рыночные события</h2>
+        <ul id="events-list"></ul>
+        <button id="trigger-event">Сгенерировать случайное событие</button>
+      </section>
 
-          <p class="muted">Если хочешь хранить рейтинги/историю на сервере — посмотри папку backend/main.py и разверни API.</p>
-        </div>
+      <!-- SETTINGS TAB -->
+      <section id="settings" class="pane">
+        <h2>Настройки</h2>
+        <button id="buy-stars">Купить Telegram Stars (пример)</button>
+        <button id="sync-cloud">Синхронизировать в облако (через бота)</button>
+        <button id="load-cloud">Загрузить из облака</button>
       </section>
     </main>
 
-    <footer class="app-footer">
-      <small>Demo Trading — мобильная оптимизация. Ликвидация = обнуление баланса при полном проигрыше.</small>
-    </footer>
+    <footer class="footer">Начальный баланс: $1,000 · 3 монеты: BTC, SHIB, DOGE</footer>
   </div>
 
-  <script src="/script.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
